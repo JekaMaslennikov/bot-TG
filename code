@@ -1,0 +1,48 @@
+import requests
+import telegram
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# Встановлюємо Google Search API ключ
+API_KEY = "YOUR_API_KEY_HERE"
+
+# Функція, яка буде викликана при команді /start
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Привіт! Я бот для пошуку інформації за ключовими словами. Введіть ключове слово, за яким ви бажаєте здійснити пошук.")
+
+# Функція, яка буде викликана при отриманні повідомлення від користувача
+def search(update, context):
+    query = update.message.text
+    results = get_results(query)
+    message = format_results(results)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
+# Функція, яка здійснює пошук за ключовими словами в Google
+def get_results(query):
+    url = f"https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx=017576662512468239146:omuauf_lfve&q={query}"
+    response = requests.get(url)
+    results = response.json()["items"]
+    return results
+
+# Функція, яка форматує результати пошуку в текстове повідомлення
+def format_results(results):
+    message = "Результати пошуку:\n\n"
+    for result in results:
+        title = result["title"]
+        link = result["link"]
+        message += f"<a href='{link}'>{title}</a>\n"
+    return message
+
+# Встановлюємо з'єднання з Telegram API
+updater = Updater(token="YOUR_BOT_TOKEN_HERE", use_context=True)
+
+# Додаємо обробник команди /start
+start_handler = CommandHandler('start', start)
+updater.dispatcher.add_handler(start_handler)
+
+# Додаємо обробник повідомлення
+search_handler = MessageHandler(Filters.text & ~Filters.command, search)
+updater.dispatcher.add_handler(search_handler)
+
+# Запускаємо бота
+updater.start_polling()
+updater.idle()
